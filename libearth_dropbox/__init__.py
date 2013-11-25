@@ -1,5 +1,6 @@
 import dropbox
-from libearth.repository import Repository
+import os
+from libearth.repository import Repository, RepositoryKeyError
 
 __all__ = 'AuthorizationError', 'DropboxRepository'
 
@@ -22,7 +23,18 @@ class DropboxRepository(Repository):
         self.path = path
 
     def read(self, key):
-        pass
+        super(DropboxRepository, self).read(key)
+        try:
+            path = os.path.join(self.path, *key).replace('\\', '/')
+            with self.client.get_file(path) as fp:
+                while 1:
+                    chunk = fp.read(1024)
+                    if not chunk:
+                        break
+                    yield chunk
+
+        except dropbox.rest.ErrorResponse as e:
+            raise RepositoryKeyError(key, str(e))
 
     def write(self, key, iterable):
         pass
