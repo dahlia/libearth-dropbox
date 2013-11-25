@@ -10,7 +10,7 @@ class DropboxRepository(Repository):
     client = None
     path = None
 
-    def __init(self, access_token, path):
+    def __init__(self, access_token, path):
         try:
             client = dropbox.client.DropboxClient(access_token)
             client.account_info()
@@ -57,8 +57,9 @@ class DropboxRepository(Repository):
         return access_token, user_id
 
     def __repr__(self):
-        return '{0.__module__}.{0.__name__}({1!r})'.format(
+        return '{0.__module__}.{0.__name__}({1!r} {2!r})'.format(
             type(self),
+            self.client.account_info()['display_name'],
             self.path
         )
 
