@@ -25,7 +25,7 @@ class DropboxRepository(Repository):
     def read(self, key):
         super(DropboxRepository, self).read(key)
         try:
-            path = os.path.join(self.path, *key).replace('\\', '/')
+            path = self._get_path(key)
             with self.client.get_file(path) as fp:
                 while 1:
                     chunk = fp.read(1024)
@@ -40,7 +40,15 @@ class DropboxRepository(Repository):
         pass
 
     def exists(self, key):
-        pass
+        path = self._get_path(key)
+        try:
+            self.client.metadata(path)
+            return True
+        except dropbox.rest.ErrorResponse as e:
+            if e.status == 404:
+                return False
+            else:
+                raise e
 
     def list(self, key):
         pass
@@ -55,6 +63,9 @@ class DropboxRepository(Repository):
         flow = dropbox.client.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
         access_token, user_id = flow.finish(code)
         return access_token, user_id
+
+    def _get_path(self, key):
+        return os.path.join(self.path, *key).replace('\\', '/')
 
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r} {2!r})'.format(
