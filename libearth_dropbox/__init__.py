@@ -59,6 +59,7 @@ class DropboxRepository(Repository):
         authorize_url = flow.start()
         return authorize_url;
 
+    @staticmethod
     def authorize(app_key, app_secret, code):
         flow = dropbox.client.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
         access_token, user_id = flow.finish(code)
