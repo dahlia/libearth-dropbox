@@ -51,7 +51,19 @@ class DropboxRepository(Repository):
                 raise e
 
     def list(self, key):
-        pass
+        super(DropboxRepository, self).list(key)
+        path = self._get_path(key)
+        try:
+            metadata = self.client.metadata(path)
+            if not metadata['is_dir']:
+                raise RepositoryKeyError(key, "{0} is not a directory".format(
+                    path
+                ))
+            return [self._get_filename(obj['path'])
+                    for obj in metadata['contents']]
+        except dropbox.rest.ErrorResponse as e:
+            raise RepositoryKeyError(key, str(e))
+            
 
     @staticmethod
     def get_authorization_url(app_key, app_secret):
@@ -67,6 +79,9 @@ class DropboxRepository(Repository):
 
     def _get_path(self, key):
         return os.path.join(self.path, *key).replace('\\', '/')
+    
+    def _get_filename(self, path):
+        return path[path.rfind('/')+1:]
 
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r} {2!r})'.format(
