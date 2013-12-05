@@ -1,6 +1,7 @@
 import dropbox
 import os
-from libearth.repository import Repository, RepositoryKeyError
+from libearth.repository import (FileNotFoundError, NotADirectoryError,
+                                 Repository, RepositoryKeyError)
 
 __all__ = 'AuthorizationError', 'DropboxRepository'
 
@@ -13,8 +14,12 @@ class DropboxRepository(Repository):
     def __init__(self, access_token, path):
         try:
             client = dropbox.client.DropboxClient(access_token)
-            client.account_info()
+            metadata = client.metadata(path)
+            if not metadata['is_dir']:
+                raise NotADirectoryError(repr(path) + 'is not a directory')
         except dropbox.rest.ErrorResponse as e:
+            if e.status == '404':
+                raise FileNotFoundError(repr(path) + 'does not exists')
             raise AuthorizationError(
                 e.message
             )
