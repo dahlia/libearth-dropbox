@@ -24,7 +24,7 @@ install_requires = [
 
 setup(
     name='libearth-dropbox',
-    description='dropbox repository for Earth Reader',
+    description='Dropbox repository for Earth Reader',
     long_description=readme(),
     url='http://earthreader.org/',
     author='Earth Reader Project',
@@ -35,6 +35,10 @@ setup(
     dependency_links=[
         'https://github.com/earthreader/libearth/archive/master.zip'
         '#egg=libearth-dev'
-    ]
+    ],
+    entry_points='''
+        [libearth.repositories]
+        dropbox = libearth_dropbox:DropboxRepository
+    '''
 )
 

@@ -1,5 +1,10 @@
-import dropbox
 import os
+try:
+    from urllib import parse as urlparse
+except ImportError:
+    import urlparse
+
+import dropbox
 from libearth.repository import Repository, RepositoryKeyError
 
 __all__ = 'AuthorizationError', 'DropboxRepository'
@@ -9,6 +14,25 @@ class DropboxRepository(Repository):
 
     client = None
     path = None
+
+    @classmethod
+    def from_url(cls, url):
+        if not isinstance(url, urlparse.ParseResult):
+            raise TypeError(
+                'url must be an instance of {0.__module__}.{0.__name__}, '
+                'not {1!r}'.format(urlparse.ParseResult, url)
+            )
+        if url.scheme != 'dropbox':
+            raise ValueError('{0.__module__}.{0.__name__} only accepts '
+                             'dropbox:// scheme'.format(DropboxRepository))
+        elif url.host or url.port or url.params or url.query or url.fragment:
+            raise ValueError('dropbox:// must not contain any host/port/'
+                             'parameters/query/fragment')
+        access_token = url.username or url.password
+        if not access_token:
+            raise ValueError('dropbox:// must contain access token as '
+                             'username e.g. dropbox://yourtoken@/path/')
+        return cls(access_token, url.path)
 
     def __init__(self, access_token, path):
         try:
@@ -21,6 +45,10 @@ class DropboxRepository(Repository):
 
         self.client = client
         self.path = path
+
+    def to_url(self, scheme):
+        super(DropboxRepository, self).to_url(scheme)
+        return '{0}://{1.session.access_token}@{1.path}'.format(scheme, self)
 
     def read(self, key):
         super(DropboxRepository, self).read(key)
