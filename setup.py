@@ -6,7 +6,6 @@ except ImportError:
     from ez_setup import use_setuptools
     use_setuptools()
     from setuptools import find_packages, setup
-from setuptools.command.test import test
 
 
 def readme():
@@ -15,19 +14,6 @@ def readme():
             return f.read()
     except (IOError, OSError):
         return ''
-
-
-class pytest(test):
-
-    def finalize_options(self):
-        test.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        from pytest import main
-        errno = main(self.test_args)
-        raise SystemExit(errno)
 
 
 install_requires = [
@@ -44,14 +30,12 @@ setup(
     author='Earth Reader Project',
     author_email='earthreader' '@' 'librelist.com',
     license='MIT License',
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(),
     install_requires=install_requires,
     dependency_links=[
         'https://github.com/earthreader/libearth/archive/master.zip'
         '#egg=libearth-dev'
     ],
-    tests_require=['pytest >= 2.3.0'],
-    cmdclass={'test': pytest},
     classifiers=[
         'Development Status :: 1 - Planning',  # FIXME
         'Intended Audience :: Developers',
