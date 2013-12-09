@@ -1,4 +1,5 @@
 import os
+from contextlib import closing
 try:
     from urllib import parse as urlparse
 except ImportError:
@@ -60,7 +61,7 @@ class DropboxRepository(Repository):
         super(DropboxRepository, self).read(key)
         try:
             path = self._get_path(key)
-            with self.client.get_file(path) as fp:
+            with closing(self.client.get_file(path)) as fp:
                 while 1:
                     chunk = fp.read(1024)
                     if not chunk:
