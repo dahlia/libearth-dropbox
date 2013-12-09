@@ -26,7 +26,8 @@ class DropboxRepository(Repository):
         if url.scheme != 'dropbox':
             raise ValueError('{0.__module__}.{0.__name__} only accepts '
                              'dropbox:// scheme'.format(DropboxRepository))
-        elif hasattr(url, 'host') or url.port or url.params or url.query or url.fragment:
+        elif hasattr(url, 'host') or url.port or url.params or url.query or \
+                url.fragment:
             raise ValueError('dropbox:// must not contain any host/port/'
                              'parameters/query/fragment')
         access_token = url.username or url.password
