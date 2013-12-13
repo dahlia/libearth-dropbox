@@ -3,6 +3,10 @@ libearth-dropbox
 
 Dropbox repository for libearth.
 
+Distributed under `GPLv2`__ or later
+
+__ http://www.gnu.org/licenses/gpl-2.0.html
+
 
 Install
 -------
