@@ -18,7 +18,7 @@ def readme():
 
 install_requires = [
     'dropbox >= 1.6',
-    'libearth == 0.1.0, == dev',
+    'libearth == 0.1.0',
 ]
 
 
