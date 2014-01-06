@@ -73,6 +73,7 @@ class DropboxRepository(Repository):
             raise RepositoryKeyError(key, str(e))
 
     def write(self, key, iterable):
+        super(DropboxRepository, self).write(key, iterable)
         #FIXME: Use upload chunk instead of put_file
         path = self._get_path(key)
         fp = StringIO(''.join(iterable))
