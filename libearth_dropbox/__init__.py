@@ -63,19 +63,22 @@ class DropboxRepository(Repository):
         super(DropboxRepository, self).read(key)
         t_key = tuple(key)
         if t_key in self.buffer.keys():
-            yield self.buffer[t_key]
-        else:
-            try:
-                path = self._get_path(key)
-                with closing(self.client.get_file(path)) as fp:
-                    while 1:
-                        chunk = fp.read(1024)
-                        if not chunk:
-                            break
-                        yield chunk
+            return self.buffer[t_key]
 
-            except dropbox.rest.ErrorResponse as e:
-                raise RepositoryKeyError(key, str(e))
+        try:
+            path = self._get_path(key)
+            data = ''
+            with closing(self.client.get_file(path)) as fp:
+                while 1:
+                    chunk = fp.read(1024)
+                    if not chunk:
+                        break
+                    data += chunk
+                self.buffer[t_key] = data
+                return data
+
+        except dropbox.rest.ErrorResponse as e:
+            raise RepositoryKeyError(key, str(e))
 
     def write(self, key, iterable):
         super(DropboxRepository, self).write(key, iterable)
