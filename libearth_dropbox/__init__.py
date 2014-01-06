@@ -17,6 +17,7 @@ class DropboxRepository(Repository):
 
     client = None
     path = None
+    buffer = {}
 
     @classmethod
     def from_url(cls, url):
@@ -60,23 +61,30 @@ class DropboxRepository(Repository):
 
     def read(self, key):
         super(DropboxRepository, self).read(key)
-        try:
-            path = self._get_path(key)
-            with closing(self.client.get_file(path)) as fp:
-                while 1:
-                    chunk = fp.read(1024)
-                    if not chunk:
-                        break
-                    yield chunk
+        t_key = tuple(key)
+        if t_key in self.buffer.keys():
+            yield self.buffer[t_key]
+        else:
+            try:
+                path = self._get_path(key)
+                with closing(self.client.get_file(path)) as fp:
+                    while 1:
+                        chunk = fp.read(1024)
+                        if not chunk:
+                            break
+                        yield chunk
 
-        except dropbox.rest.ErrorResponse as e:
-            raise RepositoryKeyError(key, str(e))
+            except dropbox.rest.ErrorResponse as e:
+                raise RepositoryKeyError(key, str(e))
 
     def write(self, key, iterable):
         super(DropboxRepository, self).write(key, iterable)
         #FIXME: Use upload chunk instead of put_file
         path = self._get_path(key)
-        fp = StringIO(''.join(iterable))
+        t_key = tuple(key)
+        data = ''.join(iterable)
+        self.buffer[t_key] = data
+        fp = StringIO(data)
         self.client.put_file(path, fp, overwrite=True)
 
     def exists(self, key):
