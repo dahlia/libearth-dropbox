@@ -5,8 +5,13 @@ try:
     from urllib import parse as urlparse
 except ImportError:
     import urlparse
+try:
+    import Queue
+except:
+    import queue as Queue
 
 import dropbox
+import threading
 from libearth.repository import (FileNotFoundError, NotADirectoryError,
                                  Repository, RepositoryKeyError)
 
@@ -18,6 +23,7 @@ class DropboxRepository(Repository):
     client = None
     path = None
     buffer = {}
+    remained_keys = Queue.Queue()
 
     @classmethod
     def from_url(cls, url):
@@ -55,6 +61,10 @@ class DropboxRepository(Repository):
         self.client = client
         self.path = path
 
+        worker = threading.Thread(target=self._thread_upload)
+        worker.setDaemon(True)
+        worker.start()
+
     def to_url(self, scheme):
         super(DropboxRepository, self).to_url(scheme)
         return '{0}://{1.session.access_token}@{1.path}'.format(scheme, self)
@@ -82,13 +92,11 @@ class DropboxRepository(Repository):
 
     def write(self, key, iterable):
         super(DropboxRepository, self).write(key, iterable)
-        #FIXME: Use upload chunk instead of put_file
-        path = self._get_path(key)
         t_key = tuple(key)
         data = ''.join(iterable)
         self.buffer[t_key] = data
-        fp = StringIO(data)
-        self.client.put_file(path, fp, overwrite=True)
+        #FIXME: Don't add key if already exists.
+        self.remained_keys.put(t_key)
 
     def exists(self, key):
         path = self._get_path(key)
@@ -133,6 +141,16 @@ class DropboxRepository(Repository):
     
     def _get_filename(self, path):
         return path[path.rfind('/')+1:]
+
+    def _thread_upload(self):
+        while 1:
+            key = self.remained_keys.get()
+            path = self._get_path(key)
+            data = self.buffer[key]
+            fp = StringIO(data)
+            #FIXME: Use upload chunk instead of put_file
+            self.client.put_file(path, fp, overwrite=True)
+
 
     def __repr__(self):
         return '{0.__module__}.{0.__name__}({1!r} {2!r})'.format(
