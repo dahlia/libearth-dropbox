@@ -72,11 +72,15 @@ class DropboxRepository(Repository):
     def read(self, key):
         super(DropboxRepository, self).read(key)
         t_key = tuple(key)
+        path = self._get_path(key)
+        revision = self.client.metadata(path)['revision']
         if t_key in self.buffer.keys():
-            return self.buffer[t_key]
+            if self.buffer[t_key]['revision'] in (revision, None):
+                print('read from memory: {0!s}'.format(t_key))
+                return self.buffer[t_key]['data']
 
         try:
-            path = self._get_path(key)
+            print('read from network: {0!s}'.format(t_key))
             data = ''
             with closing(self.client.get_file(path)) as fp:
                 while 1:
@@ -84,7 +88,11 @@ class DropboxRepository(Repository):
                     if not chunk:
                         break
                     data += chunk
-                self.buffer[t_key] = data
+
+                self.buffer[t_key] = {
+                    'revision': revision,
+                    'data': data,
+                }
                 return data
 
         except dropbox.rest.ErrorResponse as e:
@@ -94,8 +102,10 @@ class DropboxRepository(Repository):
         super(DropboxRepository, self).write(key, iterable)
         t_key = tuple(key)
         data = ''.join(iterable)
-        self.buffer[t_key] = data
-        #FIXME: Don't add key if already exists.
+        self.buffer[t_key] = {
+            'revision': None,
+            'data': data,
+        }
         self.remained_keys.put(t_key)
 
     def exists(self, key):
@@ -122,7 +132,7 @@ class DropboxRepository(Repository):
                     for obj in metadata['contents']]
         except dropbox.rest.ErrorResponse as e:
             raise RepositoryKeyError(key, str(e))
-            
+
 
     @staticmethod
     def get_authorization_url(app_key, app_secret):
@@ -138,7 +148,7 @@ class DropboxRepository(Repository):
 
     def _get_path(self, key):
         return os.path.join(self.path, *key).replace('\\', '/')
-    
+
     def _get_filename(self, path):
         return path[path.rfind('/')+1:]
 
@@ -146,10 +156,17 @@ class DropboxRepository(Repository):
         while 1:
             key = self.remained_keys.get()
             path = self._get_path(key)
-            data = self.buffer[key]
+
+            if self.buffer[key]['revision']:
+                self.remained_keys.task_done()
+                continue
+
+            data = self.buffer[key]['data']
             fp = StringIO(data)
             #FIXME: Use upload chunk instead of put_file
-            self.client.put_file(path, fp, overwrite=True)
+            response = self.client.put_file(path, fp, overwrite=True)
+            self.buffer[key]['revision'] = response['revision']
+            self.remained_keys.task_done()
 
 
     def __repr__(self):
