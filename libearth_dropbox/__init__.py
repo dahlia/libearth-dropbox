@@ -76,7 +76,12 @@ class DropboxRepository(Repository):
         super(DropboxRepository, self).read(key)
         t_key = tuple(key)
         path = self._get_path(key)
-        revision = self.client.metadata(path)['revision']
+        try:
+            revision = self.client.metadata(path)['revision']
+        except dropbox.rest.ErrorResponse as e:
+            if e.status == 404:
+                raise RepositoryKeyError(repr(path) + 'does not exists')
+
         if t_key in self.buffer.keys():
             if self.buffer[t_key]['revision'] in (revision, None):
                 logger.info('read from memory: {0!s}'.format(t_key))
