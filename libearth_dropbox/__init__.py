@@ -11,12 +11,15 @@ except:
     import queue as Queue
 
 import dropbox
+import logging
 import threading
 from libearth.repository import (FileNotFoundError, NotADirectoryError,
                                  Repository, RepositoryKeyError)
 
 __all__ = 'AuthorizationError', 'DropboxRepository'
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class DropboxRepository(Repository):
 
@@ -76,11 +79,11 @@ class DropboxRepository(Repository):
         revision = self.client.metadata(path)['revision']
         if t_key in self.buffer.keys():
             if self.buffer[t_key]['revision'] in (revision, None):
-                print('read from memory: {0!s}'.format(t_key))
+                logger.info('read from memory: {0!s}'.format(t_key))
                 return self.buffer[t_key]['data']
 
         try:
-            print('read from network: {0!s}'.format(t_key))
+            logger.info('read from network: {0!s}'.format(t_key))
             data = ''
             with closing(self.client.get_file(path)) as fp:
                 while 1:
@@ -161,6 +164,7 @@ class DropboxRepository(Repository):
                 self.remained_keys.task_done()
                 continue
 
+            logger.info('Writing file: {0!s}'.format(key))
             data = self.buffer[key]['data']
             fp = StringIO(data)
             #FIXME: Use upload chunk instead of put_file
