@@ -47,9 +47,7 @@ class DropboxRepository(Repository):
         except dropbox.rest.ErrorResponse as e:
             if e.status == 404:
                 raise FileNotFoundError(repr(path) + 'does not exists')
-            raise AuthorizationError(
-                e.message
-            )
+            raise AuthorizationError(e.message)
 
         self.client = client
         self.path = path
