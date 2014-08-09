@@ -45,7 +45,7 @@ class DropboxRepository(Repository):
             if not metadata['is_dir']:
                 raise NotADirectoryError(repr(path) + 'is not a directory')
         except dropbox.rest.ErrorResponse as e:
-            if e.status == '404':
+            if e.status == 404:
                 raise FileNotFoundError(repr(path) + 'does not exists')
             raise AuthorizationError(
                 e.message
