@@ -36,7 +36,8 @@ class DropboxRepository(Repository):
         if not access_token:
             raise ValueError('dropbox:// must contain access token as '
                              'username e.g. dropbox://yourtoken@/path/')
-        return cls(access_token, url.path)
+        path = urlparse.unquote(url.path)
+        return cls(access_token, path)
 
     def __init__(self, access_token, path):
         try:
@@ -72,7 +73,7 @@ class DropboxRepository(Repository):
 
     def write(self, key, iterable):
         super(DropboxRepository, self).write(key, iterable)
-        #FIXME: Use upload chunk instead of put_file
+        # FIXME: Use upload chunk instead of put_file
         path = self._get_path(key)
         fp = StringIO(''.join(iterable))
         self.client.put_file(path, fp, overwrite=True)
@@ -101,13 +102,12 @@ class DropboxRepository(Repository):
                     for obj in metadata['contents']]
         except dropbox.rest.ErrorResponse as e:
             raise RepositoryKeyError(key, str(e))
-            
 
     @staticmethod
     def get_authorization_url(app_key, app_secret):
         flow = dropbox.client.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
         authorize_url = flow.start()
-        return authorize_url;
+        return authorize_url
 
     @staticmethod
     def authorize(app_key, app_secret, code):
@@ -117,7 +117,7 @@ class DropboxRepository(Repository):
 
     def _get_path(self, key):
         return os.path.join(self.path, *key).replace('\\', '/')
-    
+
     def _get_filename(self, path):
         return path[path.rfind('/')+1:]
 
