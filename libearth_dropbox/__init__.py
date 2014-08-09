@@ -36,7 +36,8 @@ class DropboxRepository(Repository):
         if not access_token:
             raise ValueError('dropbox:// must contain access token as '
                              'username e.g. dropbox://yourtoken@/path/')
-        return cls(access_token, url.path)
+        path = urlparse.unquote(url.path)
+        return cls(access_token, path)
 
     def __init__(self, access_token, path):
         try:
