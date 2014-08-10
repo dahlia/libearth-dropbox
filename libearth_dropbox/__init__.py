@@ -1,6 +1,6 @@
 import os
 from contextlib import closing
-from StringIO import StringIO
+import io
 try:
     from urllib import parse as urlparse
 except ImportError:
@@ -75,7 +75,7 @@ class DropboxRepository(Repository):
         super(DropboxRepository, self).write(key, iterable)
         # FIXME: Use upload chunk instead of put_file
         path = self._get_path(key)
-        fp = StringIO(''.join(iterable))
+        fp = io.BytesIO(''.join(iterable))
         self.client.put_file(path, fp, overwrite=True)
 
     def exists(self, key):
